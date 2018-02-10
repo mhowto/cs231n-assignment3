@@ -144,6 +144,8 @@ class CaptioningRNN(object):
         captions_in_embedding, cache_embed = word_embedding_forward(captions_in, W_embed)
         if self.cell_type == 'rnn':
             rnn_out, cache = rnn_forward(captions_in_embedding, h0, Wx, Wh, b) 
+        elif self.cell_type == 'lstm':
+            rnn_out, cache = lstm_forward(captions_in_embedding, h0, Wx, Wh, b) 
         else:
             raise NotImplementedError()
         scores, cache_scores = temporal_affine_forward(rnn_out, W_vocab, b_vocab)
@@ -153,6 +155,8 @@ class CaptioningRNN(object):
         drnn_out, dW_vocab, db_vocab = temporal_affine_backward(dscores, cache_scores)
         if self.cell_type == 'rnn':
             dcaptions_in_embedding, dh0, dWx, dWh, db = rnn_backward(drnn_out, cache)
+        elif self.cell_type == 'lstm':
+            dcaptions_in_embedding, dh0, dWx, dWh, db = lstm_backward(drnn_out, cache)
         else:
             raise NotImplementedError()
         dW_embed = word_embedding_backward(dcaptions_in_embedding, cache_embed)
@@ -241,6 +245,8 @@ class CaptioningRNN(object):
             word_embed, _ = word_embedding_forward(capt, W_embed)
             if self.cell_type == 'rnn':
                 h, _ = rnn_step_forward(np.squeeze(word_embed), prev_h, Wx, Wh, b)
+            elif self.cell_type == 'lstm':
+                h, c, _ = lstm_step_forward(np.squeeze(word_embed), prev_h, prev_c, Wx, Wh, b)
             else:
                 raise NotImplementedError()
             scores, _ = temporal_affine_forward(h[:, np.newaxis, :], W_vocab, b_vocab)
@@ -249,7 +255,7 @@ class CaptioningRNN(object):
 
             prev_h = h
             if self.cell_type == 'lstm':
-                raise NotImplementedError()
+                prev_c = c
             capt = captions[:, i]
         ############################################################################
         #                             END OF YOUR CODE                             #
